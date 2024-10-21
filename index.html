@@ -1,0 +1,689 @@
+<html>
+  <head>
+    <style>
+      #tag-header {
+        display: flex;
+        margin-left: 1em;
+      }
+      #tag-header .tag {
+        border: 1px solid black;
+        border-radius: 2px;
+        margin-right: 1em;
+        padding-top: .1em;
+        padding-right: .35em;
+        padding-bottom: .1em;
+        padding-left: .35em;
+        cursor: pointer;
+      }
+      .tag.active {
+        background-color: gold;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div id="tag-header"></div>
+      <div id="board"></div>
+    </div>
+    <script type="text/javascript" src="./d3.v7.min.js"></script>
+    <script type="text/javascript">
+      const CURVE_EPSILON = 300
+      const projects = [
+        {
+          id: 'majano',
+          "Project Title": "Majano, Concentrico 10 competition entry",
+          "Collaboration": "Middle of Nowhere + Natalia Clua",
+          "Date": 2023,
+          "Location": "Logroño, Spain",
+          "tags": [
+            "practice",
+            "territory",
+            "craft"
+          ]
+        },
+        {
+          id: 'premio-felix-candela',
+          "Project Title": "Tira de Agave in Oaxaca, Mexico, Premio Felix Candela competition entry",
+          "Collaboration": "Middle of Nowhere + Forms of Living + Lola Lozano",
+          "Date": 2020,
+          "Location": "Oaxaca, Mexico",
+          "tags": [
+            "practice",
+            "territory",
+            "craft"
+          ]
+        },
+        {
+          id: 'orme-court',
+          "Project Title": "Two Houses in Orme Court, Bayswater",
+          "Collaboration": "For Castañon Architects",
+          "Date": "2017-19",
+          "Location": "London, UK",
+          "tags": [
+            "practice",
+            "housing"
+          ]
+        },
+        {
+          id: 'mount-street',
+          "Project Title": "Studio House, Mount Street",
+          "Collaboration": "Farjadi Architects + Castanon Associates",
+          "Date": 2016,
+          "Location": "London, UK",
+          "tags": [
+            "practice",
+            "housing"
+          ]
+        },
+        {
+          id: 'manor-house',
+          "Project Title": "Extension for a Manor House",
+          "Collaboration": "For Castañon Architects",
+          "Date": 2016,
+          "Location": "East Grinstead, West Sussex, UK",
+          "tags": [
+            "practice",
+            "housing"
+          ]
+        },
+        {
+          id: 'bermondsey-atlas',
+          "Project Title": "An Atlas of Bermondsey",
+          "Collaboration": "For Andrew Phillips",
+          "Date": 2016,
+          "Location": "London, UK",
+          "tags": [
+            "practice",
+            "research",
+            "global-cities"
+          ]
+        },
+        {
+          id: 'lagos-public-toilet',
+          "Project Title": "Public Toilet Lagos Business School competition entry",
+          "Collaboration": "For Mappamundi Design",
+          "Date": 2015,
+          "Location": "Lagos, Nigeria",
+          "tags": [
+            "practice",
+            "west-africa"
+          ]
+        },
+        {
+          id: 'abraka-london-grand-canal',
+          "Project Title": "Abraka alternative living in London Grand Canal, Paddington arm",
+          "Collaboration": "For Mappamundi Design",
+          "Date": 2015,
+          "Location": "London, UK",
+          "tags": [
+            "practice",
+            "housing"
+          ]
+        },
+        {
+          id: 'historical-trajectories',
+          "Project Title": "Historical Trajectories",
+          "Collaboration": "EmTech programme, Architectural Association School of Architecture",
+          "Date": "2022-",
+          "Location": "London, UK",
+          "tags": [
+            "academic"
+          ]
+        },
+        {
+          id: 'contemporary-art-architecture',
+          "Project Title": "Contemporary Art and Architecture",
+          "Collaboration": "ETSAUN",
+          "Date": "2019-",
+          "Location": "Pamplona, Spain",
+          "tags": [
+            "academic",
+            "global-cities",
+            "exhibition"
+          ]
+        },
+        {
+          id: 'porosities',
+          "Project Title": "Porosities_The Giardini della Biennale as Metaproject_Unit Master Diploma 13",
+          "Collaboration": null,
+          "Date": "2019-20",
+          "Location": "Architectural Association School of Architecture London",
+          "tags": [
+            "academic",
+            "global-cities",
+            "exhibition"
+          ]
+        },
+        {
+          id: 'issl-aa',
+          "Project Title": "International Summer School London_Architecture of Asylum",
+          "Collaboration": "with Georgios Eftaxiopoulos, ETSAUN",
+          "Date": "2015-17",
+          "Location": "London, UK",
+          "tags": [
+            "academic",
+            "global-cities",
+            "migrations",
+            "housing",
+            "exhibition"
+          ]
+        },
+        {
+          id: 'ds6',
+          "Project Title": "Design Studio 6 Tutor (MArch Thesis - Museum in the Southbank, London)",
+          "Collaboration": "ETSAUN",
+          "Date": "2017-19",
+          "Location": "London, UK",
+          "tags": [
+            "academic",
+            "housing",
+            "exhibition"
+          ]
+        },
+        {
+          id: 'abeyance',
+          "Project Title": "L'Afrique Intime_Afro-revivalism in Abeyance",
+          "Collaboration": "with Richard Aina for History and Theory Studies",
+          "Date": "2019-24",
+          "Location": "London, UK",
+          "tags": [
+            "academic",
+            "west-africa",
+            "craft"
+          ]
+        },
+        {
+          id: 'desert-archive',
+          "Project Title": "Desert Archive",
+          "Collaboration": "Negev School of Architecture, SCE",
+          "Date": "2022-",
+          "Location": "Be'er Sheva, Israel",
+          "tags": [
+            "research",
+            "desert"
+          ]
+        },
+        {
+          id: 'aa-building',
+          "Project Title": "AA Building Conversations Organiser",
+          "Collaboration": "Architectural Association Members' Office",
+          "Date": "2016-19",
+          "Location": "London, UK",
+          "tags": [
+            "research",
+            "housing"
+          ]
+        },
+        {
+          id: 'american-desert',
+          "Project Title": "Read in the American Desert",
+          "Collaboration": "History and Critical Thinking MA Thesis, Architectural Association",
+          "Date": 2016,
+          "Location": "London, UK",
+          "tags": [
+            "research",
+            "desert"
+          ]
+        },
+        {
+          id: 'habitar',
+          "Project Title": "Habitar_La Casa 1925 - 1975",
+          "Collaboration": "Proyectos IV_ETSAUN",
+          "Date": "2014-15",
+          "Location": "Pamplon, Spain",
+          "tags": [
+            "research",
+            "housing"
+          ]
+        },
+        {
+          id: 'paris-college-of-art',
+          "Project Title": "Architecture et Écriture_Paris College of Art, Paris(FR)",
+          "Collaboration": "Visiting School Paris_Architectural Association",
+          "Date": 2017,
+          "Location": "Paris, France",
+          "tags": [
+            "research",
+            "desert",
+            "exhibition"
+          ]
+        },
+        {
+          id: 'displacements',
+          "Project Title": "Displacements of Mohammed Abdalah During His Life",
+          "Collaboration": "Journal of Architectural Education, 77:2, 437-457, DOI: 10.1080/10464883.2023.2233390\nTo link to this article: https://doi.org/10.1080/10464883.2023.2233390",
+          "Date": 2023,
+          "Location": null,
+          "tags": [
+            "research",
+            "desert",
+            "migrations"
+          ]
+        },
+        {
+          id: 'trans-saharan-lines',
+          "Project Title": "Blowing Dust Off the Trails_An Itinerary Through Trans-Saharan Lines",
+          "Collaboration": "AR Architecture, Research—The Line, Notes on Politics",
+          "Date": 2020,
+          "Location": null,
+          "tags": [
+            "research",
+            "desert",
+            "migrations"
+          ]
+        },
+        {
+          id: 'aliquid-novum',
+          "Project Title": "Ex Africa Aliquid Novum [There is something new coming from Africa]_Herman Haan and Aldo van Eyck’s Journeys in a Pseudo-Ethnographic Vein",
+          "Collaboration": "International Journal of Islamic Architecture\nVolume 11 Number 2",
+          "Date": 2022,
+          "Location": null,
+          "tags": [
+            "research",
+            "desert"
+          ]
+        },
+        {
+          id: 'algerian-sphinx',
+          "Project Title": "The Algerian Sphinx_Le Corbusier’s other colonialism in the M’Zab",
+          "Collaboration": "The Journal of Architecture Volume 27 Issue 2-3",
+          "Date": 2022,
+          "Location": null,
+          "tags": [
+            "research",
+            "desert"
+          ]
+        },
+        {
+          id: 'new-culture-studios',
+          "Project Title": "The Soil of New Culture Studios_A Spring for African Architecture",
+          "Collaboration": "with Demas Nwoko and Jite Brume",
+          "Date": 2023,
+          "Location": "Copenhagen, Denmark",
+          "tags": [
+            "research",
+            "west-africa",
+            "craft"
+          ]
+        }
+      ]
+
+      const debugTags = selection => {
+        selection.append('text').append('textPath')
+          .attr('xlink:href', d => `#${d.lineid}`)
+          //.attr('path', d => `M ${d.source.x} ${d.source.y} L ${d.target.x} ${d.target.y}`)
+          .style('text-anchor', 'middle')
+          .attr('startOffset', '10%')
+          //.attr('transform', d => `translate(${d.source.x}, ${d.target.y})`)
+          .text(d => d.tag)
+
+      }
+
+      const debugControls = selection => {
+        // control 1
+        selection.append('circle')
+          .attr('cx', d => d.source.x)
+          .attr('cy', d => d.target.y)
+          .attr('r', '2px')
+          .attr('fill', 'red')
+
+        // control 2
+        selection.append('circle')
+          .attr('cx', d => d.target.x)
+          .attr('cy', d => d.source.y)
+          .attr('r', '2px')
+          .attr('fill', 'blue')
+      }
+
+      /* these line fns expect d.source.x/y and d.target.x/y to be present */
+      const linear = d => {
+        return `M ${d.source.x} ${d.source.y} L ${d.target.x} ${d.target.y}`
+      }
+
+      const cubeCurve = d => {
+        let path = `M ${d.source.x} ${d.source.y}`
+        let cx1 = d.source.x
+        let cy1 = d.target.y
+        let cx2 = d.target.x
+        let cy2 = d.source.y
+        // if the x of source and target are too close together,
+        // then the curve drawn in the y dimension will be too flat (same with y)
+        // add a minimum amount of depth to the control points so that there's a bit more curve
+        const minDiff = 30
+        const pad = minDiff / 2
+        if (Math.abs(cx2 - cx1) <= minDiff) {
+          cx1 = cx1 < cx2 ? cx1 - pad : cx1 + pad
+          cx2 = cx2 < cx1 ? cx2 - pad : cx2 + pad
+        }
+        if (Math.abs(cy2 - cy1) <= minDiff) {
+          cy1 = cy1 < cy2 ? cy1 - pad : cy1 + pad
+          cy2 = cy2 < cy1 ? cy2 - pad : cy2 + pad
+        }
+        path += ` C ${cx1} ${cy1} ${cx2} ${cy2} ${d.target.x} ${d.target.y}`
+        return path
+      }
+
+      const quadCurve1 = d => {
+        return `M ${d.source.x} ${d.source.y} Q ${d.source.x} ${d.target.y} ${d.target.x} ${d.target.y}`
+      }
+      const quadCurve2 = d => {
+        return `M ${d.source.x} ${d.source.y} Q ${d.target.x} ${d.source.y} ${d.target.x} ${d.target.y}`
+      }
+
+      const tagMap = projects.reduce((acc, curr) => {
+        for (let i = 0; i < curr.tags.length; i++) {
+          if (!(curr.tags[i] in acc)) {
+            acc[curr.tags[i]] = []
+          }
+          acc[curr.tags[i]].push(curr)
+        }
+        curr.tags
+        return acc
+      }, {})
+
+      // keeps a count of the number of connections between two nodes
+      // will be used to draw edges
+      const nodeLinkStats = {}
+      const links = Object.entries(tagMap).flatMap(([tag, arr]) => {
+        const next = []
+        for (let i = 0; i < arr.length - 1; i++) {
+          for (let j = i+1; j < arr.length; j++) {
+            next.push({
+              tag,
+              lineid: `${arr[i]['id']}|${arr[j]['id']}|${tag}`,
+              source: arr[i]['id'],
+              target: arr[j]['id'],
+            })
+            const key = `${arr[i]['id']} ${arr[j]['id']}`
+            if (!nodeLinkStats.hasOwnProperty(key)) {
+              nodeLinkStats[key] = 0
+            }
+            nodeLinkStats[key] = nodeLinkStats[key] + 1
+          }
+        }
+        return next
+      })
+
+      console.log(tagMap)
+      console.log(links)
+      console.log(nodeLinkStats)
+
+
+      function getTextWidth(text, font = "500 12px sans-serif") {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        context.font = font;
+        return context.measureText(text).width;
+      }
+
+      function breakString(word, maxWidth, hyphenCharacter='-') {
+        const characters = word.split("");
+        const lines = [];
+        let currentLine = "";
+        characters.forEach((character, index) => {
+          const nextLine = `${currentLine}${character}`;
+          const lineWidth = getTextWidth(nextLine);
+          if (lineWidth >= maxWidth) {
+            const currentCharacter = index + 1;
+            const isLastLine = characters.length === currentCharacter;
+            const hyphenatedNextLine = `${nextLine}${hyphenCharacter}`;
+            lines.push(isLastLine ? nextLine : hyphenatedNextLine);
+            currentLine = "";
+          } else {
+            currentLine = nextLine;
+          }
+        });
+        return { hyphenatedStrings: lines, remainingWord: currentLine };
+      }
+
+      function wrapLabel(label, maxWidth) {
+        const words = label.split(" ");
+        const completedLines = [];
+        let nextLine = "";
+        words.forEach((word, index) => {
+          const wordLength = getTextWidth(`${word} `);
+          const nextLineLength = getTextWidth(nextLine);
+          if (wordLength > maxWidth) {
+            const { hyphenatedStrings, remainingWord } = breakString(word, maxWidth);
+            completedLines.push(nextLine, ...hyphenatedStrings);
+            nextLine = remainingWord;
+          } else if (nextLineLength + wordLength >= maxWidth) {
+            completedLines.push(nextLine);
+            nextLine = word;
+          } else {
+            nextLine = [nextLine, word].filter(Boolean).join(" ");
+          }
+          const currentWord = index + 1;
+          const isLastWord = currentWord === words.length;
+          if (isLastWord) {
+            completedLines.push(nextLine);
+          }
+        });
+        return completedLines.filter(line => line !== "");
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        function resize() {
+          svg.attr("width", window.innerWidth)
+          svg.attr("height", window.innerHeight)
+        }
+
+        const board = d3.select('#board')
+        const width = window.innerWidth
+        const height = window.innerHeight
+        const particleRadius = 8
+        const boardPad = particleRadius * 2
+
+        const svg = board.append('svg')
+          .attr('width', width)
+          .attr('height', height)
+          .attr('preserveAspectRatio', 'xMinYMid')
+          .attr('viewBox', `0 0 ${width} ${height}`)
+
+        d3.select(window).on('resize.board', resize)
+
+        const data = projects.map(p => ({
+          ...p,
+          // the following formula prevents the circle from being partially drawn outside of the board
+          x: boardPad + Math.floor(Math.random() * (width - boardPad*2)),
+          y: boardPad + Math.floor(Math.random() * (height - boardPad*2)),
+        }))
+
+        var simulation = d3.forceSimulation(data)
+          .force("charge", d3.forceCollide(particleRadius).strength(300).iterations(1))
+          .force("link", d3.forceLink(links).id(d => d['id']))
+          .force("x", d3.forceX(width / 2))
+          .force("y", d3.forceY(height / 2))
+          .stop()
+
+        simulation.tick()
+
+        const particles = svg.selectAll('circle.particle').data(data)
+
+        const particlesEnter = particles.enter().append('g')
+          .attr('class', 'particle')
+          .attr('data-id', d => d.id)
+          .attr('transform', d => `translate(${d.x}, ${d.y})`)
+
+        particlesEnter.append('circle')
+          .attr('r', particleRadius)
+          .attr('fill', (d, i) => (i % 2) === 0 ? 'black' : 'white')
+          .attr('stroke', 'black')
+          .attr('stroke-width', '2px')
+          .on('mouseover', function () {
+            d3.select(this.parentNode).select('text').style('visibility', null)
+            const d = d3.select(this).datum()
+            // originate all paths from the hovered node
+            // node can be connected as a source or target; select both and animate appropriately
+            d3.selectAll(`.edge[data-source="${d.id}"] path`)
+              .transition().duration(1000)
+              .attr('stroke-dashoffset', 0)
+            d3.selectAll(`.edge[data-target="${d.id}"] path`)
+              .transition().duration(1000)
+              .attr('stroke-dashoffset', (d,i,n) => n[i].getTotalLength() * 2)
+          })
+
+          .on('mouseleave', function () {
+            d3.select(this.parentNode).select('text').style('visibility', 'hidden')
+            const d = d3.select(this).datum()
+            d3.selectAll(`.edge[data-source="${d.id}"] path, .edge[data-target="${d.id}"] path`)
+              .transition().duration(1000)
+              .attr('stroke-dashoffset', (d, i, n) => {
+                return n[i].getTotalLength()
+              })
+          })
+
+        const labelEnter = particlesEnter.append('text')
+          .attr('y', particleRadius * 2)
+          .attr('text-anchor', 'middle')
+          .style('visibility', 'hidden')
+          .text(d => {
+            return d['Project Title']
+            //const label = wrapLabel(d['Project Title'], 100)
+          })
+
+        const lineEnter = svg.append('g').selectAll('g.edge').data(links)
+          .enter().append('g')
+            .attr('class', 'edge')
+            .attr('data-source', d => d.source.id)
+            .attr('data-target', d => d.target.id)
+            .attr('data-tag', d => d.tag)
+
+        const lineTypes = [quadCurve1, quadCurve2, linear, cubeCurve]
+        lineEnter.append('path')
+          .attr('d', (d, i) => {
+            const key = `${d.source.id} ${d.target.id}`
+            const stat = nodeLinkStats[key]
+            if (stat > lineTypes.length) {
+              return lineTypes[0](d)
+            }
+            nodeLinkStats[key] = nodeLinkStats[key] - 1
+            return lineTypes[stat](d)
+          })
+          .attr('id', d => d.lineid)
+          .attr('stroke-dasharray', (d, i, n) => {
+            const len = n[i].getTotalLength()
+            return `${len} ${len}`
+          })
+          .attr('stroke-dashoffset', (d, i, n) => {
+            const len = n[i].getTotalLength()
+            return len
+          })
+          .attr('stroke-width', '1px')
+          .attr('stroke', 'black')
+          .attr('fill', 'none')
+
+        // TODO highlight constellation against the other nodes
+
+        const constellationParts = Object.entries(tagMap).flatMap(d => {
+          const data = []
+          let source = d3.select(`.particle[data-id="${d[1][0].id}"]`).datum()
+          for (let i=1; i < d[1].length; i++) {
+            data.push({
+              source,
+              target: d3.select(`.particle[data-id="${d[1][i].id}"]`).datum(),
+              tag: d[0],
+            })
+            source = d3.select(`.particle[data-id="${d[1][i].id}"]`).datum()
+          }
+          return data
+        })
+
+        // draw tag lines
+        const constellations = svg.selectAll('path.constellation').data(constellationParts)
+        const constellationsEnter = constellations.enter().append('path')
+          .attr('class', 'constellation')
+          .attr('data-constellation-tag', d => d.tag)
+          .attr('fill', 'none')
+          .attr('stroke', 'black')
+          .attr('stroke-width', '1px')
+          .attr('d', d => {
+            // if an X or Y dimension lower than a threshold, then use a simpler quad curve
+            if (Math.abs(d.target.x - d.source.x) <= CURVE_EPSILON || Math.abs(d.target.y - d.source.y) <= CURVE_EPSILON) {
+              return quadCurve1(d)
+            }
+            return cubeCurve(d)
+          })
+          .attr('stroke-dasharray', (d, i, n) => {
+            const len = n[i].getTotalLength()
+            return `${len} ${len}`
+          })
+          .attr('stroke-dashoffset', (d, i, n) => {
+            const len = n[i].getTotalLength()
+            return len
+          })
+
+        const chainTransition = (selection, transitioner, { sourceStartId, targetStartId, duration=100 }={}) => {
+          let sel = selection.filter(d => {
+            if (sourceStartId) {
+              return d.source.id === sourceStartId
+            }
+              return d.target.id === targetStartId
+          })
+          if (sel.empty()) {
+            return
+          }
+          sel.transition().duration(duration)
+            .call(transitioner)
+            .on('end', function() {
+              if (sourceStartId) {
+                const next = d3.select(this).datum().target.id
+                chainTransition(selection, transitioner, { sourceStartId: next, duration })
+                return
+              }
+              const next = d3.select(this).datum().source.id
+              chainTransition(selection, transitioner, { targetStartId: next, duration })
+              return
+            })
+        }
+
+        // draw tag tag-header
+        const tags = d3.select('#tag-header').selectAll('div.tag').data(Object.keys(tagMap))
+        const tagEnter = tags.enter().append('div').attr('class', 'tag')
+        tagEnter
+          .on('click', function() {
+            const el = d3.select(this)
+            const d = d3.select(this).datum()
+            const active = el.classed('active')
+            const tags = d3.selectAll(`.constellation[data-constellation-tag="${d}"]`)
+            const split = tags.data().reduce((acc, curr) => {
+              acc.sources.add(curr.source.id)
+              acc.targets.add(curr.target.id)
+              return acc
+            }, { sources: new Set(), targets: new Set() })
+            if (active) { // deactivate
+              const startSet = Array.from(split.targets.difference(split.sources))
+              if (startSet.length !== 1) {
+                console.warn(`Could not find starting project node for tag: ${d}`)
+                return 
+              }
+              chainTransition(
+                tags,
+                selection => selection.attr('stroke-dashoffset', (d,i,n) => n[i].getTotalLength()),
+                { targetStartId: startSet[0] }
+              )
+            } else { // activate
+              const startSet = Array.from(split.sources.difference(split.targets))
+              if (startSet.length !== 1) {
+                console.warn(`Could not find starting project node for tag: ${d}`)
+                return 
+              }
+              chainTransition(
+                tags,
+                selection => selection.attr('stroke-dashoffset', 0),
+                { sourceStartId: startSet[0] }
+              )
+            }
+
+            el.classed('active', !active)
+          })
+          .text(d => d)
+
+        //lineEnter
+        //  .call(debugControls)
+        //  .call(debugTags)
+
+      })
+    </script>
+  </body>
+</html>
