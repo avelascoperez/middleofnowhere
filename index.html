@@ -28,6 +28,11 @@
     <script type="text/javascript" src="./d3.v7.min.js"></script>
     <script type="text/javascript">
       const CURVE_EPSILON = 300
+      const width = window.innerWidth
+      const height = window.innerHeight
+      const particleRadius = 8
+      const particleContactPad = 5
+      const boardPad = particleRadius * 2
       const projects = [
         {
           id: 'majano',
@@ -335,6 +340,29 @@
           .attr('fill', 'blue')
       }
 
+      // finds point of contact on a node which is some pad outside of the radius.
+      // expects source and target to have x/y properties
+      // keeping this here for an archive. it worked well for linear curves, but anything quadratic or above
+      // made the lines look like they were pointing to a point on surface of the node instead of at the center
+      // of the node. the trick was to display the full length of the line minus particleRadius + particleConnectPad
+      // below is how to use it:
+      // const [sx, sy] = findContact({ source: d.target, target: d.source }) // source
+      // const [tx, ty] = findContact({ source: d.source, target: d.target }) // target
+      const findContact = ({ source, target }) => {
+        // vector from target to source
+        const [vx, vy] = [source.x - target.x, source.y - target.y]
+        // length of vector
+        const len = Math.sqrt(Math.pow(vx, 2) + Math.pow(vy, 2))
+        // normal of vector
+        const [nx, ny] = [vx / len, vy / len]
+
+        // point of intersection (at the radius) plus a pad
+        return [
+          target.x + (nx * (particleRadius + particleContactPad)),
+          target.y + (ny * (particleRadius + particleContactPad)),
+        ]
+      }
+
       /* these line fns expect d.source.x/y and d.target.x/y to be present */
       const linear = d => {
         return `M ${d.source.x} ${d.source.y} L ${d.target.x} ${d.target.y}`
@@ -469,10 +497,6 @@
         }
 
         const board = d3.select('#board')
-        const width = window.innerWidth
-        const height = window.innerHeight
-        const particleRadius = 8
-        const boardPad = particleRadius * 2
 
         const svg = board.append('svg')
           .attr('width', width)
@@ -542,7 +566,7 @@
             //const label = wrapLabel(d['Project Title'], 100)
           })
 
-        const lineEnter = svg.append('g').selectAll('g.edge').data(links)
+        const lineEnter = svg.insert('g', ':first-child').selectAll('g.edge').data(links) // insert to be under the particle
           .enter().append('g')
             .attr('class', 'edge')
             .attr('data-source', d => d.source.id)
@@ -562,10 +586,20 @@
           })
           .attr('id', d => d.lineid)
           .attr('stroke-dasharray', (d, i, n) => {
+            const pad = particleRadius + particleContactPad
             const len = n[i].getTotalLength()
-            return `${len} ${len}`
+            // We need a stroke/gap pattern to be reversed.
+            // 0, pad, (len - (pad*2)), pad, 0, len
+            // 1. we need to start with a gap of pad, so make stroke 0
+            // 2. gap of length pad (start)
+            // 3. length of line minus padding on each end
+            // 4. gap of length pad (end)
+            // 5. we need to create a gap of full length, so make this stroke 0
+            // 6. gap of length len (to hide the line)
+            return `0 ${pad} ${len - (pad*2)} ${pad} 0 ${len}`
           })
           .attr('stroke-dashoffset', (d, i, n) => {
+            //const len = n[i].getTotalLength() - (particleRadius + particleContactPad)
             const len = n[i].getTotalLength()
             return len
           })
@@ -591,7 +625,7 @@
 
         // draw tag lines
         const constellations = svg.selectAll('path.constellation').data(constellationParts)
-        const constellationsEnter = constellations.enter().append('path')
+        const constellationsEnter = constellations.enter().insert('path', ':first-child') // insert to be under the particles
           .attr('class', 'constellation')
           .attr('data-constellation-tag', d => d.tag)
           .attr('fill', 'none')
@@ -605,14 +639,25 @@
             return cubeCurve(d)
           })
           .attr('stroke-dasharray', (d, i, n) => {
+            const pad = particleRadius + particleContactPad
             const len = n[i].getTotalLength()
-            return `${len} ${len}`
+            // We need a stroke/gap pattern to be reversed.
+            // 0, pad, (len - (pad*2)), pad, 0, len
+            // 1. we need to start with a gap of pad, so make stroke 0
+            // 2. gap of length pad (start)
+            // 3. length of line minus padding on each end
+            // 4. gap of length pad (end)
+            // 5. we need to create a gap of full length, so make this stroke 0
+            // 6. gap of length len (to hide the line)
+            return `0 ${pad} ${len - (pad*2)} ${pad} 0 ${len}`
           })
           .attr('stroke-dashoffset', (d, i, n) => {
-            const len = n[i].getTotalLength()
+            const len = n[i].getTotalLength() - (particleRadius + particleContactPad)
             return len
           })
 
+        // chainTransition is specifically to be used to animate consecutive paths
+        // from source -> target -> source -> ... -> last target
         const chainTransition = (selection, transitioner, { sourceStartId, targetStartId, duration=100 }={}) => {
           let sel = selection.filter(d => {
             if (sourceStartId) {
@@ -659,8 +704,9 @@
               }
               chainTransition(
                 tags,
-                selection => selection.attr('stroke-dashoffset', (d,i,n) => n[i].getTotalLength()),
-                { targetStartId: startSet[0] }
+                selection =>
+                  selection.attr('stroke-dashoffset', (d,i,n) => n[i].getTotalLength() - (particleRadius + particleContactPad)),
+                { targetStartId: startSet[0] },
               )
             } else { // activate
               const startSet = Array.from(split.sources.difference(split.targets))
