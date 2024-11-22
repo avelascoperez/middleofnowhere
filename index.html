@@ -321,7 +321,22 @@
           .attr('startOffset', '10%')
           //.attr('transform', d => `translate(${d.source.x}, ${d.target.y})`)
           .text(d => d.tag)
+      }
 
+      const deactivateStrokes = selection => {
+        return selection.attr('stroke', '#d3d3d3')
+      }
+
+      const activateStrokes = selection => {
+        return selection.attr('stroke', 'black')
+      }
+
+      const deactivateNodes = selection => {
+        return selection.attr('stroke', '#d3d3d3')
+      }
+
+      const activateNodes = selection => {
+        return selection.attr('stroke', 'black')
       }
 
       const debugControls = selection => {
@@ -338,6 +353,85 @@
           .attr('cy', d => d.source.y)
           .attr('r', '2px')
           .attr('fill', 'blue')
+      }
+
+      // chainTransition is specifically to be used to animate consecutive paths
+      // from source -> target -> source -> ... -> last target
+      const chainTransition = (selection, transitioner, { sourceStartId, targetStartId, duration=100 }={}) => {
+        let sel = selection.filter(d => {
+          if (sourceStartId) {
+            return d.source.id === sourceStartId
+          }
+            return d.target.id === targetStartId
+        })
+        if (sel.empty()) {
+          return
+        }
+        sel.transition().duration(duration)
+          .call(transitioner)
+          .on('end', function() {
+            if (sourceStartId) {
+              const next = d3.select(this).datum().target.id
+              chainTransition(selection, transitioner, { sourceStartId: next, duration })
+              return
+            }
+            const next = d3.select(this).datum().source.id
+            chainTransition(selection, transitioner, { targetStartId: next, duration })
+            return
+          })
+      }
+
+      const deactivateTag = tag => {
+        const tags = d3.selectAll(`.constellation[data-constellation-tag="${tag}"]`)
+        const split = tags.data().reduce((acc, curr) => {
+          acc.sources.add(curr.source.id)
+          acc.targets.add(curr.target.id)
+          return acc
+        }, { sources: new Set(), targets: new Set() })
+        const startSet = Array.from(split.targets.difference(split.sources))
+        if (startSet.length !== 1) {
+          console.warn(`Could not find starting project node for tag: ${d}`)
+          return 
+        }
+        chainTransition(
+          tags,
+          selection => {
+            console.log(selection)
+            // since this transition is chained, each node will come one at a time, so we can select a single node here
+            const data = d3.select(selection.node()).datum()
+            console.log(d3.selectAll([data.source.id, data.target.id].map(id => `.particle[data-id="${id}"] circle`).join(', ')))
+            d3.selectAll([data.source.id, data.target.id].map(id => `.particle[data-id="${id}"] circle`).join(', '))
+              .call(deactivateNodes)
+            return selection
+              .attr('stroke-dashoffset', (d,i,n) => n[i].getTotalLength() - (particleRadius + particleContactPad))
+              .call(deactivateStrokes)
+          },
+          { targetStartId: startSet[0] },
+        )
+      }
+
+      const activateTag = tag => {
+        const tags = d3.selectAll(`.constellation[data-constellation-tag="${tag}"]`)
+        const split = tags.data().reduce((acc, curr) => {
+          acc.sources.add(curr.source.id)
+          acc.targets.add(curr.target.id)
+          return acc
+        }, { sources: new Set(), targets: new Set() })
+        deactivateStrokes(d3.selectAll('path'))
+        const startSet = Array.from(split.sources.difference(split.targets))
+        if (startSet.length !== 1) {
+          console.warn(`Could not find starting project node for tag: ${d}`)
+          return 
+        }
+        chainTransition(
+          tags,
+          selection => {
+            return selection
+              .attr('stroke-dashoffset', 0)
+              .call(activateStrokes)
+          },
+          { sourceStartId: startSet[0] }
+        )
       }
 
       // finds point of contact on a node which is some pad outside of the radius.
@@ -656,32 +750,6 @@
             return len
           })
 
-        // chainTransition is specifically to be used to animate consecutive paths
-        // from source -> target -> source -> ... -> last target
-        const chainTransition = (selection, transitioner, { sourceStartId, targetStartId, duration=100 }={}) => {
-          let sel = selection.filter(d => {
-            if (sourceStartId) {
-              return d.source.id === sourceStartId
-            }
-              return d.target.id === targetStartId
-          })
-          if (sel.empty()) {
-            return
-          }
-          sel.transition().duration(duration)
-            .call(transitioner)
-            .on('end', function() {
-              if (sourceStartId) {
-                const next = d3.select(this).datum().target.id
-                chainTransition(selection, transitioner, { sourceStartId: next, duration })
-                return
-              }
-              const next = d3.select(this).datum().source.id
-              chainTransition(selection, transitioner, { targetStartId: next, duration })
-              return
-            })
-        }
-
         // draw tag tag-header
         const tags = d3.select('#tag-header').selectAll('div.tag').data(Object.keys(tagMap))
         const tagEnter = tags.enter().append('div').attr('class', 'tag')
@@ -690,37 +758,16 @@
             const el = d3.select(this)
             const d = d3.select(this).datum()
             const active = el.classed('active')
-            const tags = d3.selectAll(`.constellation[data-constellation-tag="${d}"]`)
-            const split = tags.data().reduce((acc, curr) => {
-              acc.sources.add(curr.source.id)
-              acc.targets.add(curr.target.id)
-              return acc
-            }, { sources: new Set(), targets: new Set() })
-            if (active) { // deactivate
-              const startSet = Array.from(split.targets.difference(split.sources))
-              if (startSet.length !== 1) {
-                console.warn(`Could not find starting project node for tag: ${d}`)
-                return 
-              }
-              chainTransition(
-                tags,
-                selection =>
-                  selection.attr('stroke-dashoffset', (d,i,n) => n[i].getTotalLength() - (particleRadius + particleContactPad)),
-                { targetStartId: startSet[0] },
-              )
-            } else { // activate
-              const startSet = Array.from(split.sources.difference(split.targets))
-              if (startSet.length !== 1) {
-                console.warn(`Could not find starting project node for tag: ${d}`)
-                return 
-              }
-              chainTransition(
-                tags,
-                selection => selection.attr('stroke-dashoffset', 0),
-                { sourceStartId: startSet[0] }
-              )
+            if (active) {
+              deactivateTag(d)
+            } else {
+              // deactivate all other tags
+              const activeTags = d3.selectAll('.tag.active').each(function(d,i) {
+                d3.select(this).classed('active', false)
+                deactivateTag(d)
+              })
+              activateTag(d)
             }
-
             el.classed('active', !active)
           })
           .text(d => d)
