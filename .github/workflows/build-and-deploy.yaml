@@ -1,4 +1,5 @@
 name: Build and Deploy
+
 on:
   push:
     branches: [ master ]
@@ -7,14 +8,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: npm install csv-parser
-      - run: make build
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Build site
+        run: make build
+
+      - name: Upload build output as artifact
+        uses: actions/upload-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
+          name: middleofnowhere-site
+          path: ./dist
