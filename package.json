@@ -17,6 +17,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "csv-parser": "^3.2.0"
+    "@tailwindcss/cli": "^4.1.10",
+    "csv-parser": "^3.2.0",
+    "tailwindcss": "^4.1.10"
   }
 }

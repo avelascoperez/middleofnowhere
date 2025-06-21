@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+#tag-header {
+  display: flex;
+  margin-left: 1em;
+}
+#tag-header .tag {
+  @apply rounded-xs mr-1 px-2 py-1 cursor-pointer
+}
+.tag.active {
+  background-color: gold;
+}
