@@ -12,13 +12,26 @@
   },
   "license": "ISC",
   "author": "Phillip Quiza <pquiza@gmail.com> (http://pilliq.me/)",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.10",
     "csv-parser": "^3.2.0",
+    "marked": "^15.0.12",
     "tailwindcss": "^4.1.10"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.16",
+    "fs-extra": "^11.3.0",
+    "globby": "^14.1.0",
+    "imagemin": "^9.0.1",
+    "imagemin-cli": "^8.0.0",
+    "imagemin-gifsicle": "^7.0.0",
+    "imagemin-mozjpeg": "^10.0.0",
+    "imagemin-pngquant": "^10.0.0",
+    "imagemin-webp": "^8.0.0",
+    "sharp": "^0.34.2"
   }
 }
